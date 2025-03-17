@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beatstorm - Menú</title>
+    <link rel="icon" href="media/images/logo.png" type="image/x-icon">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Delius+Swash+Caps&family=Liter&family=Shizuru&family=Sour+Gummy:ital,wght@0,100..900;1,100..900&family=Syne+Mono&display=swap" rel="stylesheet">
+
+
+
+</head>
+<body>
+    <div class="stars"></div>
+    <div id="menu" class="container text-center my-5 p-4">
+        <div class="logo-container">
+            <img src="https://nowmusicradio.com/wp-content/uploads/2019/05/ondas-de-audio.gif" class="audio-wave">
+            <img src="media/images/logo2.png" class="main-logo">
+            <img src="https://nowmusicradio.com/wp-content/uploads/2019/05/ondas-de-audio.gif" class="audio-wave">
+        </div>
+        <br><br>
+        <a class="btn btn-light btn-lg mb-3 btn-custom" id="loginButton" onclick="loginWithGoogle()">Iniciar sesión</a><br>
+        <a href="screens/game.html" class="btn btn-light btn-lg mb-3 btn-custom">Jugar</a>
+        <a href="howtoplay.html" class="btn btn-outline-light btn-lg btn-custom">Cómo jugar</a>
+    </div>
+    
+    <!-- Música de fondo -->
+    <audio id="bgMusic"loop autoplay>
+        <source src="media/audio/beatstorm.mp3" type="audio/mp3">   
+    </audio>
+    <button id="invisibleButton" style="display: none;"></button>
+
+    <!-- Bootstrap JS, Popper.js y jQuery (opcional para algunos componentes) -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+    <!-- Custom JS -->
+    <script src="js/menu.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+    
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyB1wZzK2kZFQxxNWLjmTp3usOLVF87Rs7c",
+            authDomain: "beatstorm-c1dd2.firebaseapp.com",
+            projectId: "beatstorm-c1dd2",
+            storageBucket: "beatstorm-c1dd2.appspot.com",
+            messagingSenderId: "665686742727",
+            appId: "1:665686742727:web:fc85d54f306687741a10e2",
+            measurementId: "G-LX95391FPK"
+        };
+    
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+    
+        window.loginWithGoogle = loginWithGoogle;
+    
+        // Verificar si el usuario ya ha iniciado sesión al cargar la página
+        window.onload = function () {
+            const user = localStorage.getItem('user');
+            if (user) {
+                // Si hay un usuario guardado, ocultar el botón de iniciar sesión
+                document.getElementById('loginButton').style.display = 'none';
+            }
+        };
+    
+        function loginWithGoogle() {
+            signInWithPopup(auth, provider)
+                .then((result) => {
+                    const user = result.user;
+                    console.log("Usuario autenticado:", user);
+    
+                    // Guardamos los datos del usuario en localStorage
+                    localStorage.setItem('user', JSON.stringify(user));
+    
+                    // Ocultar el botón de iniciar sesión
+                    document.getElementById('loginButton').style.display = 'none';
+    
+                    // Mostrar mensaje de bienvenida con SweetAlert
+                    Swal.fire({
+                        title: `¡Hola, ${user.displayName}!`,
+                        text: "Tu progreso se guardará automáticamente.",
+                        icon: "success",
+                        confirmButtonText: "Continuar"
+                    });
+                })
+                .catch((error) => {
+                    console.error("Error en autenticación:", error);
+                    Swal.fire({
+                        title: "Error al iniciar sesión",
+                        text: error.message,
+                        icon: "error",
+                        confirmButtonText: "Intentar de nuevo"
+                    });
+                });
+        }
+    </script>
+    
+
+
+</body>
+</html>

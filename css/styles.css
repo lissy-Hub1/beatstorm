@@ -1,0 +1,87 @@
+
+body {
+    text-align: center;
+    background: url('../media/images/background.png');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    font-family: "Syne Mono";
+    color: white;
+    height: 100vh; 
+    overflow: hidden;
+}
+
+#menu {
+    margin-top: 100px;
+}
+
+#menu img {
+    margin-top: 12%;
+    max-width: 35%; 
+    height: auto;
+}
+
+.audio-wave{
+    width: 30%;
+}
+
+
+.btn {
+    display: inline-block;
+    margin: 10px;
+    padding: 15px 30px;
+    font-size: 24px;
+    color: white;
+    background: transparent; /* Fondo transparente */
+    border: 2px solid transparent; /* Borde transparente */
+    border-radius: 25px; /* Bordes redondeados */
+    cursor: pointer;
+    text-decoration: none;
+    position: relative;
+    transition: all 0.3s ease; /* Transición suave */
+    border-image: linear-gradient(45deg, #00bfff, #ff00ff, #9b4dff) 1; /* Borde con gradiente */
+}
+
+.btn:hover {
+    box-shadow: 0 0 10px 2px #00bfff, 0 0 20px 4px #ff00ff, 0 0 30px 6px #9b4dff; /* Efecto neón */
+}
+
+.btn {
+    -webkit-border-radius: 25px; 
+    -moz-border-radius: 25px; 
+    border-radius: 25px;
+}
+
+@media (max-width: 768px) {
+    #menu img {
+        margin-top: 30%;
+        max-width: 60% !important;  
+    }
+
+    .audio-wave{
+        width: 15%;
+        max-width: 70% !important; 
+    }
+
+    .btn {
+        font-size: 18px;  
+        padding: 12px 20px;  
+    }
+}
+
+@media (max-width: 480px) {
+    #menu img {
+        margin-top: 50%;
+        max-width: 70% !important; 
+    }
+
+    .audio-wave{
+        width: 10%;
+        height:80px !important;
+    }
+
+    .btn {
+        font-size: 16px; 
+        padding: 10px 15px; 
+    }
+}

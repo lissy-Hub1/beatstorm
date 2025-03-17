@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beatstorm - Jugar</title>
+    <link rel="stylesheet" href="../css/game.css">
+</head>
+<body>
+    <h1>🎮 Beatstorm - Juega al Ritmo 🎶</h1>
+
+    <!-- Disco con canción seleccionada -->
+    <div id="songContainer">
+        <div id="disco">
+            <div id="discoImage"></div>
+        </div>
+        <p id="songTitle">Canción: "Ritmo Infernal"</p>
+        <button id="playButton">Jugar</button>
+    </div>
+
+    <!-- Puntuación -->
+    <div id="scoreboard">
+        <p>Puntuación: <span id="score">0</span></p>
+        <p>Más alta: <span id="highScore">0</span></p>
+    </div>
+
+    <!-- Otras canciones disponibles -->
+    <div id="songList">
+        <h3>Otras canciones</h3>
+        <ul>
+            <li><button class="songOption" data-song="Canción 1">Canción 1</button></li>
+            <li><button class="songOption" data-song="Canción 2">Canción 2</button></li>
+            <li><button class="songOption" data-song="Canción 3">Canción 3</button></li>
+        </ul>
+    </div>
+
+    <script>
+        document.getElementById("playButton").addEventListener("click", () => {
+       
+            window.location.href = "play.html";
+        });
+    </script>
+</body>
+</html>
