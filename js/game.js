@@ -1,134 +1,221 @@
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const scoreElement = document.getElementById('score');
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 canvas.width = 800;
 canvas.height = 600;
 
-let circles = [];  // Lista de círculos en el canvas
-let currentSequence = [];  // Secuencia de colores para el jugador
-let playerSequence = [];  // Secuencia de toques del jugador
-let score = 0;  // Puntuación
-let gameInterval;  // Intervalo para la generación de círculos
-let circleColors = ['#FF00FF', '#00FFFF', '#FFFF00'];  // Colores de los círculos (rosa, azul y amarillo neón)
-let gameOver = false;  // Estado del juego
-let speed = 2000;  // Intervalo en milisegundos para generar nuevos círculos
-let music = new Audio('ruta/a/tu/cancion.mp3');  // Música de fondo
-music.loop = true;  // Reproducir música en bucle
-let timeLimit = 3000;  // Tiempo límite para presionar un círculo (en milisegundos)
+let circles = [];
+let score = 0;
+let gameActive = false;
+let gameOver = false;
+let circleSpawnInterval = 600;
+let currentCircleIndex = 0;
+let sequence = [];
+let intervalID = null;
+let timeLimit = 3000;
 
-// Función para generar un círculo en una posición aleatoria
-function createCircle() {
-    const radius = 40;
-    const x = Math.random() * (canvas.width - 2 * radius) + radius;
-    const y = Math.random() * (canvas.height - 2 * radius) + radius;
-    const color = circleColors[Math.floor(Math.random() * circleColors.length)];
-    const timeOut = Date.now() + timeLimit;  // Asignar un límite de tiempo para presionar el círculo
-    circles.push({ x, y, radius, color, timeOut });  // Añadir el círculo a la lista
-}
+const audio = new Audio();
+const selectedSong = localStorage.getItem("selectedSong");
 
-// Función para dibujar los círculos en el canvas
-function drawCircles() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);  // Limpiar el canvas
-    for (const circle of circles) {
+if (selectedSong) {
+    audio.src = `../media/audio/${selectedSong}`; // Ruta donde están las canciones
+} else {
+    console.error("No se seleccionó ninguna canción.");
+} 
+
+let songDuration = 0;
+
+// Sonido al tocar un círculo
+const hitSound = new Audio("../media/audio/tap.mp3"); // Ruta del sonido al tocar
+
+audio.addEventListener("loadedmetadata", () => {
+    songDuration = audio.duration * 1000; // Convertir a milisegundos
+});
+
+// Clase de Círculos
+class Circle {
+    constructor(x, y, radius, color) {
+        this.x = x;
+        this.y = y;
+        this.originalRadius = radius;
+        this.radius = radius;
+        this.color = color;
+        this.timeCreated = Date.now();
+        this.timeToDisappear = Date.now() + timeLimit;
+        this.isDisappearing = false;
+    }
+
+    update() {
+        let now = Date.now();
+        let timeRemaining = this.timeToDisappear - now;
+
+        if (timeRemaining > 100) {
+            this.radius = this.originalRadius * (timeRemaining / timeLimit);
+        } else if (!this.isDisappearing) {
+            this.isDisappearing = true;
+        }
+    }
+
+    draw() {
         ctx.beginPath();
-        ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
-        ctx.fillStyle = circle.color;
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
         ctx.fill();
-        ctx.stroke();
+        ctx.closePath();
     }
 }
 
-// Detectar el clic en los círculos
-canvas.addEventListener('click', (event) => {
-    if (gameOver) return;  // Si el juego ha terminado, no hacer nada más
+function getRandomColor() {
+    const colors = ["#ff69b4", "#00bfff", "#ffff00"];
+    return colors[Math.floor(Math.random() * colors.length)];
+}
 
-    const { offsetX, offsetY } = event;  // Obtener las coordenadas del clic con respecto al canvas
-    const clickedCircleIndex = circles.findIndex(circle => {
-        // Cálculo de la distancia desde el centro del círculo hasta el clic
-        const distance = Math.sqrt((offsetX - circle.x) ** 2 + (offsetY - circle.y) ** 2);
-        return distance < circle.radius;  // Si la distancia es menor que el radio del círculo
+// Verifica si un círculo se solapa con otros
+function isOverlapping(x, y, radius) {
+    for (let circle of circles) {
+        let distancia = Math.sqrt((x - circle.x) ** 2 + (y - circle.y) ** 2);
+        if (distancia < radius * 2) {
+            return true; // Está demasiado cerca de otro círculo
+        }
+    }
+    return false;
+}
+
+function addCircle() {
+    if (circles.length >= 6 || gameOver) return;
+
+    let x, y, color;
+    let attempts = 0;
+
+    do {
+        x = Math.random() * (canvas.width - 100) + 50;
+        y = Math.random() * (canvas.height - 100) + 50;
+        attempts++;
+    } while (isOverlapping(x, y, 80) && attempts < 20); // Evitar solapamientos
+
+    color = getRandomColor();
+    let circle = new Circle(x, y, 80, color);
+    circles.push(circle);
+    sequence.push(color);
+}
+
+function drawGame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    circles.forEach(circle => circle.draw());
+    ctx.fillStyle = "white";
+    ctx.font = "20px Arial";
+    ctx.fillText(`Score: ${score}`, 20, 30);
+}
+
+function updateGame() {
+    circles.forEach(circle => {
+        if (circle.isDisappearing && !gameOver) {
+            gameOver = true;
+            clearInterval(intervalID);
+            Swal.fire({
+                title: "¡Juego Terminado!",
+                text: `Puntaje final: ${score}`,
+                confirmButtonText: "Volver",
+            }).then(() => {
+                window.history.back(); // Regresar a la página anterior
+            });
+        }
     });
 
-    if (clickedCircleIndex !== -1) {
-        // El jugador tocó un círculo correctamente
-        const clickedCircle = circles[clickedCircleIndex];
-        circles.splice(clickedCircleIndex, 1);  // Eliminar el círculo tocado
-        playerSequence.push(clickedCircle.color);  // Guardar el color tocado en la secuencia del jugador
+    circles.forEach(circle => circle.update());
+    drawGame();
 
-        // Comprobar si la secuencia del jugador es correcta
-        if (playerSequence[playerSequence.length - 1] !== currentSequence[playerSequence.length - 1]) {
-            gameOver = true;  // Si el jugador toca un círculo incorrecto, el juego termina
-            clearInterval(gameInterval);
-            Swal.fire({
-                title: '¡Perdiste!',
-                text: `Puntuación final: ${score}`,
-                icon: 'error',
-                confirmButtonText: 'Reiniciar',
-            }).then(() => location.reload());  // Reiniciar el juego
-        } else {
-            // Aumentar la puntuación y mostrarla
-            score++;
-            scoreElement.textContent = score;
+    if (gameActive && !gameOver) {
+        requestAnimationFrame(updateGame);
+    }
+}
 
-            // Verificar si el jugador ha completado la secuencia
-            if (playerSequence.length === currentSequence.length) {
-                playerSequence = [];  // Vaciar la secuencia del jugador
-                currentSequence.push(circleColors[Math.floor(Math.random() * circleColors.length)]);  // Agregar un nuevo color a la secuencia
-                spawnCircles();  // Generar nuevos círculos
+// Manejo de clics
+canvas.addEventListener("click", function (event) {
+    if (gameOver) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const clickY = event.clientY - rect.top;
+
+    let clickedCorrectly = false;
+
+    circles.forEach((circle, index) => {
+        const distancia = Math.sqrt((clickX - circle.x) ** 2 + (clickY - circle.y) ** 2);
+        if (distancia < circle.radius) {
+            if (circle.color === sequence[currentCircleIndex]) {
+                score++;
+                currentCircleIndex++;
+                circles.splice(index, 1);
+                clickedCorrectly = true;
+                
+                // Reproducir sonido al tocar
+                hitSound.currentTime = 0;
+                hitSound.play();
+            } else {
+                gameOver = true;
+                clearInterval(intervalID);
+                audio.pause(); // Detener la música
+                audio.currentTime = 0; // Reiniciar la música
+                Swal.fire({
+                    title: "¡Juego Terminado!",
+                    text: `Puntaje final: ${score}`,
+                    confirmButtonText: "Volver",
+                }).then(() => {
+                    window.history.back(); // Regresar a la página anterior
+                });
             }
         }
+    });
+
+    if (clickedCorrectly && currentCircleIndex === sequence.length) {
+        adjustGameSpeed();
     }
 });
 
-// Función para eliminar los círculos que no se han tocado a tiempo
-function checkCircleTimeout() {
-    const currentTime = Date.now();
-    circles = circles.filter(circle => {
-        if (currentTime > circle.timeOut) {
-            // Si el tiempo se ha agotado, el jugador pierde
-            gameOver = true;
-            clearInterval(gameInterval);
-            Swal.fire({
-                title: '¡Perdiste!',
-                text: `Puntuación final: ${score}`,
-                icon: 'error',
-                confirmButtonText: 'Reiniciar',
-            }).then(() => location.reload());  // Reiniciar el juego
-            return false;  // Eliminar el círculo
+function adjustGameSpeed() {
+    let currentTime = audio.currentTime * 1000; // Convertir a milisegundos
+
+    if (currentTime < songDuration / 3) {
+        circleSpawnInterval = 600;
+    } else if (currentTime < (2 * songDuration) / 3) {
+        circleSpawnInterval = 500;
+    } else {
+        circleSpawnInterval = 400;
+    }
+
+    clearInterval(intervalID);
+    intervalID = setInterval(() => {
+        if (gameActive && !gameOver) {
+            addCircle();
         }
-        return true;  // Mantener el círculo
-    });
+    }, circleSpawnInterval);
 }
 
-// Función para crear y mostrar círculos
-function spawnCircles() {
-    createCircle();  // Crear un círculo nuevo
-    drawCircles();  // Dibujar los círculos en el canvas
-}
-
-// Función para comenzar el juego
 function startGame() {
-    Swal.fire({
-        title: '¡Estás listo para jugar?',
-        text: 'El juego comenzará cuando hagas clic en "Comenzar".',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Comenzar',
-        cancelButtonText: 'Cancelar',
-    }).then(result => {
-        if (result.isConfirmed) {
-            //music.play();  // Reproducir la música
-            gameInterval = setInterval(() => {
-                spawnCircles();  // Crear y mostrar nuevos círculos en intervalos regulares
-                checkCircleTimeout();  // Comprobar los círculos y eliminar los que se han agotado
-            }, speed);
+    gameActive = true;
+    gameOver = false;
+    score = 0;
+    currentCircleIndex = 0;
+    circles = [];
+    sequence = [];
 
-            currentSequence.push(circleColors[Math.floor(Math.random() * circleColors.length)]);  // Empezar la secuencia con un círculo
-        }
-    });
+    if (audio.paused) {
+        audio.play();
+    }
+
+    adjustGameSpeed();
+    updateGame();
 }
 
-// Iniciar el juego cuando se carga la página
-window.onload = () => {
-    startGame();  // Llamar a la función para iniciar el juego
-};
+function resetGame() {
+    audio.currentTime = 0;
+    startGame();
+}
+
+Swal.fire({
+    title: "¡Bienvenido a Twistune!",
+    text: "Haz clic en los círculos al ritmo de la música para ganar puntos.",
+    confirmButtonText: "Jugar",
+}).then(() => {
+    startGame();
+});

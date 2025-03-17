@@ -14,7 +14,7 @@
         <div id="disco">
             <div id="discoImage"></div>
         </div>
-        <p id="songTitle">Canción: "Ritmo Infernal"</p>
+        <p id="songTitle"></p>
         <button id="playButton">Jugar</button>
     </div>
 
@@ -28,17 +28,52 @@
     <div id="songList">
         <h3>Otras canciones</h3>
         <ul>
-            <li><button class="songOption" data-song="Canción 1">Canción 1</button></li>
-            <li><button class="songOption" data-song="Canción 2">Canción 2</button></li>
-            <li><button class="songOption" data-song="Canción 3">Canción 3</button></li>
+            <li><button class="songOption" data-song="Judas">Judas</button></li>
+            <li><button class="songOption" data-song="Black And Yellow">Black And Yellow</button></li>
+            <li><button class="songOption" data-song="Party Rock">Party Rock</button></li>
         </ul>
     </div>
 
     <script>
+        // Almacenar la canción seleccionada en localStorage
+        document.querySelectorAll(".songOption").forEach(button => {
+            button.addEventListener("click", () => {
+                const songTitle = button.getAttribute("data-song");
+                let songFile = ""; // Nombre del archivo real
+    
+                // Asigna el archivo correspondiente según la canción elegida
+                switch (songTitle) {
+                    case "Judas":
+                        songFile = "judas.mp3";
+                        break;
+                    case "Black And Yellow":
+                        songFile = "black_yellow.mp3";
+                        break;
+                    case "Party Rock":
+                        songFile = "party_rock.mp3";
+                        break;
+                }
+    
+                // Guardamos la canción y el título en localStorage
+                localStorage.setItem("selectedSong", songFile);
+                localStorage.setItem("selectedSongTitle", songTitle);
+    
+                // Actualizar la pantalla con la canción elegida
+                document.getElementById("songTitle").textContent = `Canción: "${songTitle}"`;
+            });
+        });
+    
+        // Redirigir a play.html con la canción guardada
         document.getElementById("playButton").addEventListener("click", () => {
-       
             window.location.href = "play.html";
         });
+    
+        // Cargar la última canción seleccionada al recargar la página
+        window.addEventListener("load", () => {
+            const lastSong = localStorage.getItem("selectedSongTitle") || "Ritmo Infernal";
+            document.getElementById("songTitle").textContent = `Canción: "${lastSong}"`;
+        });
     </script>
+    
 </body>
 </html>
