@@ -1,0 +1,72 @@
+#scoreContainer {
+    position: relative;
+    text-align: center;
+    margin-top: 100px; /* Puedes ajustar el margen superior */
+}
+
+#disco {
+    position: absolute;
+    top: -16vh;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column; /* Acomoda los elementos en columna */
+    justify-content: center;
+    align-items: center;
+    width: 40vw; 
+    height: 40vw;
+    max-width: 160px; 
+    max-height: 160px; 
+    min-width: 90px;
+    min-height: 90px; 
+    border-radius: 50%;
+    border: 20px solid #d69bfe;
+    margin: 20px auto;
+    background-color: #040404;
+    text-align: center; /* Asegura que el texto esté centrado */
+}
+
+@media (max-width: 768px) {
+
+    #disco {
+        
+        top: -15vh; 
+        width: 36vw; 
+        height: 36vw;
+        max-width: 160px; 
+        max-height: 160px;  
+       
+    }
+}
+
+@media (max-width: 480px) {
+
+    #disco {
+        
+        top: -15vh; 
+        width: 36vw; 
+        height: 36vw;
+        max-width: 160px; 
+        max-height: 160px; 
+       
+    }
+   
+}
+
+
+#discoState {
+    font-size: 16px;
+    color: #d69bfe;
+    font-weight: bold;
+    margin-bottom: -5px; /* Espacio entre el estado y el score */
+}
+
+#discoScore {
+    font-size: 24px;
+    color: white;
+    font-weight: bold;
+}
+
+#gameCanvas{
+    background-color: #14001ecc;
+}

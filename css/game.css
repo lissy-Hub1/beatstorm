@@ -8,7 +8,7 @@ html, body {
     background-size: cover;
     font-family: "Syne Mono";
     color: white;
-    overflow: hidden;
+    
 }
 
 
@@ -104,23 +104,57 @@ h1 {
 
 #songList {
     margin-top: 40px;
+    text-align: center; /* Centra el contenedor de la lista */
+    width: auto;
+    max-width: 100%;
+    margin: 0 auto; /* Centra el contenedor */
+}
+
+#songList ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: inline-block; /* Para que el contenido de la lista esté alineado a la izquierda */
+    text-align: left; /* Alinea el contenido de los botones a la izquierda */
+}
+
+#songList li {
+    margin: 10px 0; /* Espacio entre los botones */
 }
 
 .songOption {
-    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
     margin: 5px;
     font-size: 20px;
-    background-color: #ff0055;
+    background-color: transparent; /* Fondo transparente */
     color: white;
-    border: none;
+    border: 2px solid rgba(255, 255, 255, 0.7); /* Borde blanco */
     cursor: pointer;
     border-radius: 10px;
-    transition: background-color 0.3s;
+    width: 100%; /* Hace que todos los botones ocupen el mismo espacio disponible */
+    text-align: left; /* Alinea el texto de los botones a la izquierda */
+    box-sizing: border-box; /* Asegura que padding y border se incluyan en el ancho total */
 }
 
 .songOption:hover {
-    background-color: #ff3366;
+    background-color: rgba(255, 255, 255, 0.2); /* Fondo semi-transparente al pasar el ratón */
 }
+
+.songOption span {
+    margin-left: 10px; /* Espacio entre el texto y la flecha */
+    font-size: 24px; /* Tamaño de la flecha */
+}
+
+/* Estilo para la flecha de play */
+.songOption::after {
+    content: "▶"; /* Símbolo de la flecha de play */
+    font-size: 24px; /* Tamaño de la flecha */
+    margin-left: 10px;
+}
+
 
 canvas {
     

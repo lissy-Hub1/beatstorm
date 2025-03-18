@@ -4,15 +4,17 @@ const user = JSON.parse(localStorage.getItem('user'));
 // Configuración del juego
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-
+let baseRadius ;
 
 function adjustCanvasSize() {
     if (window.innerHeight > window.innerWidth) {
         canvas.width = window.innerWidth * 0.7;
         canvas.height = window.innerHeight * 0.7;
+        baseRadius = Math.min(canvas.width, canvas.height) * 0.15;
     } else {
         canvas.width = window.innerWidth * 0.7;
         canvas.height = window.innerHeight * 0.8;
+        baseRadius = Math.min(canvas.width, canvas.height) * 0.095;
     }
 }
 
@@ -45,7 +47,7 @@ audio.addEventListener("loadedmetadata", () => {
     songDuration = audio.duration * 1000; 
 });
 
-const baseRadius = Math.min(canvas.width, canvas.height) * 0.15;
+
 
 class Circle {
     constructor(x, y, radius, color) {
@@ -71,10 +73,18 @@ class Circle {
     }
 
     draw() {
+        ctx.lineWidth = 3;
+
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius+5 , 0, Math.PI * 2);
+        ctx.strokeStyle = this.color;
+        ctx.stroke();
+        ctx.closePath();
+
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.fill();
+        ctx.strokeStyle  = this.color;
+        ctx.stroke();
         ctx.closePath();
     }
 }
@@ -100,10 +110,17 @@ function addCircle() {
 
     let x, y, color;
     let attempts = 0;
+    const minYPosition = canvas.height * 0.2;  
+    const maxYPosition = canvas.height - baseRadius * 2;
 
     do {
+       
         x = Math.random() * (canvas.width - baseRadius * 2) + baseRadius;
-        y = Math.random() * (canvas.height - baseRadius * 2) + baseRadius;
+        y = Math.random() * (maxYPosition - minYPosition) + minYPosition;
+   
+        if (y < 200) {
+            y = 200; 
+        }
         attempts++;
     } while (isOverlapping(x, y, 80) && attempts < 20); // Evitar solapamientos
 
@@ -116,9 +133,8 @@ function addCircle() {
 function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     circles.forEach(circle => circle.draw());
-    ctx.fillStyle = "white";
-    ctx.font = "20px Arial";
-    ctx.fillText(`Score: ${score}`, 20, 30);
+    document.getElementById('discoScore').innerText = `${score}`
+   
 }
 
 function updateGame() {
@@ -169,14 +185,40 @@ canvas.addEventListener("click", function (event) {
     }
 });
 
+let currentStage = ""; // Variable para rastrear la etapa actual
+let colorStat = "";
+
 function adjustGameSpeed() {
-    let currentTime = audio.currentTime * 1000; // Convertir a milisegundos
+    let currentTime = audio.currentTime * 1000; 
+    let discoState = document.getElementById("discoState");
+    let disco = document.getElementById("disco");
 
     if (currentTime < songDuration / 3) {
+        if (currentStage !== "Etapa Inicial") {
+            currentStage = "Etapa Inicial";
+            colorStat = "#d69bfe"; 
+            discoState.textContent = currentStage;
+            disco.style.borderColor = colorStat;
+            discoState.style.color = colorStat;
+        }
         circleSpawnInterval = 600;
     } else if (currentTime < (2 * songDuration) / 3) {
+        if (currentStage !== "Segunda Etapa") { 
+            currentStage = "Segunda Etapa";
+            colorStat = getRandomColor();
+            discoState.textContent = currentStage;
+            disco.style.borderColor = colorStat;
+            discoState.style.color = colorStat;
+        }
         circleSpawnInterval = 500;
     } else {
+        if (currentStage !== "Etapa Final") { 
+            currentStage = "Etapa Final";
+            colorStat = getRandomColor(); 
+            discoState.textContent = currentStage;
+            disco.style.borderColor = colorStat;
+            discoState.style.color = colorStat;
+        }
         circleSpawnInterval = 400;
     }
 
@@ -210,10 +252,9 @@ function resetGame() {
 }
 
 audio.addEventListener("ended", () => {
-    endGame(); // Llamamos a endGame cuando termine la canción
+    endGame(); 
 });
 
-// Función para finalizar el juego
 function endGame() {
     gameOver = true;
     clearInterval(intervalID);
@@ -224,9 +265,17 @@ function endGame() {
     Swal.fire({
         title: gameOver ? "¡Juego Terminado!" : "¡Felicidades!",
         text: `Puntaje final: ${score}`,
-        confirmButtonText: "Volver",
-    }).then(() => {
-        window.history.back(); // Regresar a la página anterior
+        showCancelButton: true,
+        confirmButtonText: "Reiniciar",
+        cancelButtonText: "Continuar",
+    }).then((result) => {
+        if (result.isConfirmed) {
+            
+            resetGame();
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+           
+            window.history.back(); 
+        }
     });
 }
 
@@ -234,25 +283,18 @@ async function saveScoreToFirestore(score) {
     try {
         if (user) {
             const userId = user.uid;
-            const selectedSong = localStorage.getItem("selectedSongTitle"); // Obtener el nombre de la canción seleccionada
-            console.log("Guardar score para la canción:", selectedSong);
-
-            // Referencia al documento del usuario
+            const selectedSong = localStorage.getItem("selectedSongTitle"); 
             const userRef = doc(db, "users", userId);
 
-            // Obtener el documento del usuario
             const userDoc = await getDoc(userRef);
 
             if (userDoc.exists()) {
-                // Si el documento del usuario ya existe, actualizamos el puntaje de la canción
-                const userScores = userDoc.data().scores || {}; // Obtener los puntajes guardados (si existen)
+                const userScores = userDoc.data().scores || {}; 
 
-                // Verificar si ya existe un puntaje para la canción seleccionada
                 if (userScores[selectedSong] === undefined || score > userScores[selectedSong]) {
-                    // Si no existe o el nuevo puntaje es más alto, lo actualizamos
+                    
                     userScores[selectedSong] = score;
 
-                    // Actualizar el documento del usuario con el nuevo puntaje
                     await updateDoc(userRef, {
                         scores: userScores
                     });
@@ -283,7 +325,7 @@ async function saveScoreToFirestore(score) {
 
 
 Swal.fire({
-    title: "¡Bienvenido a Twistune!",
+    title: "¡Pulse para empezar !",
     text: "Haz clic en los círculos al ritmo de la música para ganar puntos.",
     confirmButtonText: "Jugar",
 }).then(() => {

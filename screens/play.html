@@ -6,14 +6,20 @@
     <title>Beatstorm - Jugando</title>
     <link rel="icon" href="../media/images/logo.png" type="image/x-icon">
     <link rel="stylesheet" href="../css/game.css">
+    <link rel="stylesheet" href="../css/play.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Delius+Swash+Caps&family=Liter&family=Shizuru&family=Sour+Gummy:ital,wght@0,100..900;1,100..900&family=Syne+Mono&display=swap" rel="stylesheet">
+
 </head>
 <body>
    
-
-    <!-- Información de la canción -->
-    <div id="currentSong">
-        <p>Canción: <span id="currentSongTitle">Ritmo Infernal</span></p>
-        <p>Puntuación: <span id="score">0</span></p>
+    <div id="scoreContainer">
+        <div id="disco">
+            <p id="discoState">Etapa Inicial</p>
+            <br/>
+            <div id="discoScore"></div>
+        </div>      
     </div>
 
     <canvas id="gameCanvas"></canvas>

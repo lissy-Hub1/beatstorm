@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     
     let bgMusic = document.getElementById("bgMusic");
-    bgMusic.volume = 0.1;
+    bgMusic.volume = 0.8;
 
     function playMusic() {
         bgMusic.play().catch(error => {
