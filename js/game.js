@@ -1,7 +1,22 @@
+import { db, collection, query, where, getDocs, getDoc,updateDoc, doc, setDoc } from './firebaseSettings.js';
+const user = JSON.parse(localStorage.getItem('user'));
+
+// Configuración del juego
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-canvas.width = 800;
-canvas.height = 600;
+
+
+function adjustCanvasSize() {
+    if (window.innerHeight > window.innerWidth) {
+        canvas.width = window.innerWidth * 0.7;
+        canvas.height = window.innerHeight * 0.7;
+    } else {
+        canvas.width = window.innerWidth * 0.7;
+        canvas.height = window.innerHeight * 0.8;
+    }
+}
+
+adjustCanvasSize();
 
 let circles = [];
 let score = 0;
@@ -17,27 +32,27 @@ const audio = new Audio();
 const selectedSong = localStorage.getItem("selectedSong");
 
 if (selectedSong) {
-    audio.src = `../media/audio/${selectedSong}`; // Ruta donde están las canciones
+    audio.src = `../media/audio/${selectedSong}`; 
 } else {
     console.error("No se seleccionó ninguna canción.");
 } 
 
 let songDuration = 0;
 
-// Sonido al tocar un círculo
-const hitSound = new Audio("../media/audio/tap.mp3"); // Ruta del sonido al tocar
+const hitSound = new Audio("../media/audio/tap.mp3"); 
 
 audio.addEventListener("loadedmetadata", () => {
-    songDuration = audio.duration * 1000; // Convertir a milisegundos
+    songDuration = audio.duration * 1000; 
 });
 
-// Clase de Círculos
+const baseRadius = Math.min(canvas.width, canvas.height) * 0.15;
+
 class Circle {
     constructor(x, y, radius, color) {
         this.x = x;
         this.y = y;
-        this.originalRadius = radius;
-        this.radius = radius;
+        this.originalRadius = baseRadius;
+        this.radius = baseRadius;
         this.color = color;
         this.timeCreated = Date.now();
         this.timeToDisappear = Date.now() + timeLimit;
@@ -87,8 +102,8 @@ function addCircle() {
     let attempts = 0;
 
     do {
-        x = Math.random() * (canvas.width - 100) + 50;
-        y = Math.random() * (canvas.height - 100) + 50;
+        x = Math.random() * (canvas.width - baseRadius * 2) + baseRadius;
+        y = Math.random() * (canvas.height - baseRadius * 2) + baseRadius;
         attempts++;
     } while (isOverlapping(x, y, 80) && attempts < 20); // Evitar solapamientos
 
@@ -109,15 +124,7 @@ function drawGame() {
 function updateGame() {
     circles.forEach(circle => {
         if (circle.isDisappearing && !gameOver) {
-            gameOver = true;
-            clearInterval(intervalID);
-            Swal.fire({
-                title: "¡Juego Terminado!",
-                text: `Puntaje final: ${score}`,
-                confirmButtonText: "Volver",
-            }).then(() => {
-                window.history.back(); // Regresar a la página anterior
-            });
+            endGame(); // Llamamos a endGame cuando se acabe el tiempo
         }
     });
 
@@ -147,22 +154,12 @@ canvas.addEventListener("click", function (event) {
                 currentCircleIndex++;
                 circles.splice(index, 1);
                 clickedCorrectly = true;
-                
+
                 // Reproducir sonido al tocar
                 hitSound.currentTime = 0;
                 hitSound.play();
             } else {
-                gameOver = true;
-                clearInterval(intervalID);
-                audio.pause(); // Detener la música
-                audio.currentTime = 0; // Reiniciar la música
-                Swal.fire({
-                    title: "¡Juego Terminado!",
-                    text: `Puntaje final: ${score}`,
-                    confirmButtonText: "Volver",
-                }).then(() => {
-                    window.history.back(); // Regresar a la página anterior
-                });
+                endGame(); // Llamamos a endGame cuando el usuario hace clic en un círculo incorrecto
             }
         }
     });
@@ -211,6 +208,79 @@ function resetGame() {
     audio.currentTime = 0;
     startGame();
 }
+
+audio.addEventListener("ended", () => {
+    endGame(); // Llamamos a endGame cuando termine la canción
+});
+
+// Función para finalizar el juego
+function endGame() {
+    gameOver = true;
+    clearInterval(intervalID);
+    saveScoreToFirestore(score);
+    audio.pause(); // Detener la música
+    audio.currentTime = 0; 
+    
+    Swal.fire({
+        title: gameOver ? "¡Juego Terminado!" : "¡Felicidades!",
+        text: `Puntaje final: ${score}`,
+        confirmButtonText: "Volver",
+    }).then(() => {
+        window.history.back(); // Regresar a la página anterior
+    });
+}
+
+async function saveScoreToFirestore(score) {
+    try {
+        if (user) {
+            const userId = user.uid;
+            const selectedSong = localStorage.getItem("selectedSongTitle"); // Obtener el nombre de la canción seleccionada
+            console.log("Guardar score para la canción:", selectedSong);
+
+            // Referencia al documento del usuario
+            const userRef = doc(db, "users", userId);
+
+            // Obtener el documento del usuario
+            const userDoc = await getDoc(userRef);
+
+            if (userDoc.exists()) {
+                // Si el documento del usuario ya existe, actualizamos el puntaje de la canción
+                const userScores = userDoc.data().scores || {}; // Obtener los puntajes guardados (si existen)
+
+                // Verificar si ya existe un puntaje para la canción seleccionada
+                if (userScores[selectedSong] === undefined || score > userScores[selectedSong]) {
+                    // Si no existe o el nuevo puntaje es más alto, lo actualizamos
+                    userScores[selectedSong] = score;
+
+                    // Actualizar el documento del usuario con el nuevo puntaje
+                    await updateDoc(userRef, {
+                        scores: userScores
+                    });
+                    console.log("Puntaje actualizado exitosamente para la canción:", selectedSong);
+                } else {
+                    console.log("El puntaje actual no es más alto. No se actualiza.");
+                }
+            } else {
+                // Si el documento del usuario no existe, crearlo con el puntaje de la canción
+                const initialScores = {
+                    [selectedSong]: score
+                };
+
+                // Crear un nuevo documento para el usuario con los puntajes iniciales
+                await setDoc(userRef, {
+                    scores: initialScores
+                });
+                console.log("Documento de usuario creado y puntaje guardado para la canción:", selectedSong);
+            }
+        } else {
+            console.log("Usuario no autenticado. No se puede guardar el puntaje.");
+        }
+    } catch (e) {
+        console.error("Error al guardar el puntaje en Firestore:", e);
+    }
+}
+
+
 
 Swal.fire({
     title: "¡Bienvenido a Twistune!",

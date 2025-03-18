@@ -4,24 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beatstorm - Jugar</title>
+    <link rel="icon" href="../media/images/logo.png" type="image/x-icon">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Delius+Swash+Caps&family=Liter&family=Shizuru&family=Sour+Gummy:ital,wght@0,100..900;1,100..900&family=Syne+Mono&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="../css/game.css">
+    <script type="module" src="../js/firebaseSettings.js"></script>
 </head>
 <body>
-    <h1>🎮 Beatstorm - Juega al Ritmo 🎶</h1>
+    
 
     <!-- Disco con canción seleccionada -->
     <div id="songContainer">
         <div id="disco">
             <div id="discoImage"></div>
         </div>
-        <p id="songTitle"></p>
-        <button id="playButton">Jugar</button>
+        <h2 id="songTitle"></h2> 
+        
     </div>
 
     <!-- Puntuación -->
     <div id="scoreboard">
         <p>Puntuación: <span id="score">0</span></p>
-        <p>Más alta: <span id="highScore">0</span></p>
+
+        <div id="buttonContainer">
+            <button id="prevButton">◀</button>
+            <button id="playButton">Jugar</button>
+            <button id="nextButton">▶</button>
+        </div>
     </div>
 
     <!-- Otras canciones disponibles -->
@@ -34,14 +46,20 @@
         </ul>
     </div>
 
-    <script>
-        // Almacenar la canción seleccionada en localStorage
+    <script type="module">
+        import { db, collection, query, where, getDocs, getDoc, updateDoc, doc, setDoc } from '../js/firebaseSettings.js';
+        
+        const user = JSON.parse(localStorage.getItem('user'));
+        const selectedSong = localStorage.getItem("selectedSongTitle");
+        let userScores = {};
+        const songs = ["Judas", "Black And Yellow", "Party Rock"];
+        const audio = new Audio();
+
         document.querySelectorAll(".songOption").forEach(button => {
             button.addEventListener("click", () => {
                 const songTitle = button.getAttribute("data-song");
-                let songFile = ""; // Nombre del archivo real
-    
-                // Asigna el archivo correspondiente según la canción elegida
+                let songFile = "";
+                changeSongInfo(songTitle);
                 switch (songTitle) {
                     case "Judas":
                         songFile = "judas.mp3";
@@ -58,22 +76,125 @@
                 localStorage.setItem("selectedSong", songFile);
                 localStorage.setItem("selectedSongTitle", songTitle);
     
-                // Actualizar la pantalla con la canción elegida
-                document.getElementById("songTitle").textContent = `Canción: "${songTitle}"`;
+                document.getElementById("songTitle").textContent = `${songTitle}`;
             });
         });
-    
-        // Redirigir a play.html con la canción guardada
+
         document.getElementById("playButton").addEventListener("click", () => {
             window.location.href = "play.html";
         });
-    
-        // Cargar la última canción seleccionada al recargar la página
-        window.addEventListener("load", () => {
-            const lastSong = localStorage.getItem("selectedSongTitle") || "Ritmo Infernal";
-            document.getElementById("songTitle").textContent = `Canción: "${lastSong}"`;
+        
+        function changeSongInfo(song) {
+            console.log("cambiar info");
+            const songImage = document.getElementById("discoImage");
+            const songTitle = document.getElementById("songTitle");
+            const scoreElement = document.getElementById("score");
+
+            // Detener cualquier canción que esté sonando
+            if (!audio.paused) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+
+            songTitle.textContent = song;
+
+            // Cambiar imagen y fuente de audio
+            switch (song) {
+                case "Judas":
+                    discoImage.style.backgroundImage = "url('https://cdn-images.dzcdn.net/images/cover/0f256c4bebac58a7c4122e0e639303a8/1900x1900-000000-80-0-0.jpg')";
+                    audio.src = `../media/audio/judas.mp3`;
+                    break;
+                case "Black And Yellow":
+                    discoImage.style.backgroundImage = "url('https://cdn-images.dzcdn.net/images/cover/8335871834e391f5bb412c96bda7bfc4/1900x1900-000000-80-0-0.jpg')";
+                    audio.src = `../media/audio/black_yellow.mp3`;
+                    break;
+                case "Party Rock":
+                    discoImage.style.backgroundImage = "url('https://upload.wikimedia.org/wikipedia/en/4/49/LMFAO_-_Sorry_For_Party_Rocking.png')";
+                    audio.src = `../media/audio/party_rock.mp3`;
+                    break;
+                default:
+                    discoImage.style.backgroundImage = "url('../media/images/logo.png')";
+                    break;
+            }
+
+            // Esperar a que el audio esté cargado antes de reproducir
+            audio.load();
+            audio.play()
+                .then(() => {
+                    console.log("La canción está sonando");
+                })
+                .catch((error) => {
+                    console.error("Error al intentar reproducir la canción: ", error);
+                });
+
+            const score = userScores[song] || 0;
+            scoreElement.textContent = score;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadUserScores();
+            if (selectedSong) {
+                console.log(selectedSong);
+                setTimeout(() => {
+                    changeSongInfo(selectedSong);
+                }, 1000);
+            } else {
+                console.log("No se seleccionó ninguna canción.");
+            }
+            
         });
-    </script>
+
+        async function loadUserScores() {
+            try {
+                if (user) {
+                    const userId = user.uid;
+                    const userRef = doc(db, "users", userId);
+                    const userDoc = await getDoc(userRef);
+
+                    if (userDoc.exists()) {
+                        userScores = userDoc.data().scores || {};
+                        console.log("Puntajes del usuario:", userScores);
+
+                        // Aquí puedes actualizar la interfaz con los puntajes de las canciones
+                        for (const song in userScores) {
+                            console.log(`Puntaje de ${song}: ${userScores[song]}`);
+                            // Actualiza la UI con los puntajes
+                        }
+                    } else {
+                        console.log("No se encontraron puntajes para este usuario.");
+                    }
+                } else {
+                    console.log("Usuario no autenticado.");
+                }
+            } catch (e) {
+                console.error("Error al cargar los puntajes del usuario:", e);
+            }
+        }
     
+        function nextSong() {
+            let currentIndex = songs.indexOf(localStorage.getItem("selectedSongTitle"));
+            currentIndex = (currentIndex + 1) % songs.length;
+            const nextSongTitle = songs[currentIndex];
+
+            localStorage.setItem("selectedSong", nextSongTitle.toLowerCase().replace(/\s+/g, '_') + '.mp3'); // Guardar la canción
+            localStorage.setItem("selectedSongTitle", nextSongTitle); 
+
+            changeSongInfo(nextSongTitle); 
+        }
+
+        function prevSong() {
+            let currentIndex = songs.indexOf(localStorage.getItem("selectedSongTitle"));
+            currentIndex = (currentIndex - 1 + songs.length) % songs.length; // Si está en el inicio, va al final
+            const prevSongTitle = songs[currentIndex];
+
+            localStorage.setItem("selectedSong", prevSongTitle.toLowerCase().replace(/\s+/g, '_') + '.mp3'); // Guardar la canción
+            localStorage.setItem("selectedSongTitle", prevSongTitle); // Guardar el título de la canción
+
+            changeSongInfo(prevSongTitle); // Actualizar la UI
+        }
+
+        document.getElementById("nextButton").addEventListener("click", nextSong);
+        document.getElementById("prevButton").addEventListener("click", prevSong);
+    </script>
 </body>
 </html>
