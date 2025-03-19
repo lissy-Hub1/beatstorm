@@ -23,4 +23,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }).then(() => {
         playMusic();
     });
+
+    
+    document.querySelector("a[href='screens/game.html']").addEventListener("click", function(event) {
+        const user = localStorage.getItem("user");
+        if (!user) {
+            event.preventDefault(); // Bloquea la redirección
+            Swal.fire({
+                title: "Inicia sesión",
+                text: "Debes iniciar sesión para guardar tu progreso en el juego.",
+                icon: "warning",
+                confirmButtonText: "Iniciar sesión"
+            }).then(() => {
+                loginWithGoogle();
+            });
+        }
+    });
+
+
 });

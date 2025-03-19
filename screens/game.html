@@ -10,12 +10,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Delius+Swash+Caps&family=Liter&family=Shizuru&family=Sour+Gummy:ital,wght@0,100..900;1,100..900&family=Syne+Mono&display=swap" rel="stylesheet">
 
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=home" />
+
     <link rel="stylesheet" href="../css/game.css">
     <script type="module" src="../js/firebaseSettings.js"></script>
 </head>
 <body>
     
-
     <!-- Disco con canción seleccionada -->
     <div id="songContainer">
         <div id="disco">
@@ -45,6 +46,13 @@
             <li><button class="songOption" data-song="Party Rock">Party Rock</button></li>
         </ul>
     </div>
+
+    <div id="backButtonContainer">
+        <a href="../index.html" id="backButton"> 
+            <span class="material-symbols-outlined">home</span>
+        </a>
+    </div>
+    
 
     <script type="module">
         import { db, collection, query, where, getDocs, getDoc, updateDoc, doc, setDoc } from '../js/firebaseSettings.js';
@@ -114,6 +122,7 @@
                     break;
                 default:
                     discoImage.style.backgroundImage = "url('../media/images/logo.png')";
+                    audio.src = `../media/audio/beatstorm.mp3`;
                     break;
             }
 
@@ -134,12 +143,15 @@
         document.addEventListener("DOMContentLoaded", () => {
             loadUserScores();
             if (selectedSong) {
-                console.log(selectedSong);
+                
                 setTimeout(() => {
                     changeSongInfo(selectedSong);
                 }, 1000);
             } else {
-                console.log("No se seleccionó ninguna canción.");
+                localStorage.setItem("selectedSong", "judas.mp3");
+                localStorage.setItem("selectedSongTitle", "Judas");
+                selectedSong = "Judas";
+                changeSongInfo(selectedSong);
             }
             
         });

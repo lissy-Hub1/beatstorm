@@ -30,7 +30,7 @@
             <img src="media/images/logo2.png" class="main-logo">
             <img src="https://nowmusicradio.com/wp-content/uploads/2019/05/ondas-de-audio.gif" class="audio-wave">
         </div>
-        <br><br>
+        <br>
         <a class="btn btn-light btn-lg mb-3 btn-custom" id="loginButton" onclick="loginWithGoogle()">Iniciar sesión</a><br>
         <a href="screens/game.html" class="btn btn-light btn-lg mb-3 btn-custom">Jugar</a>
         <a href="howtoplay.html" class="btn btn-outline-light btn-lg btn-custom">Cómo jugar</a>
@@ -88,13 +88,10 @@
                     const user = result.user;
                     console.log("Usuario autenticado:", user);
     
-                    // Guardamos los datos del usuario en localStorage
                     localStorage.setItem('user', JSON.stringify(user));
     
-                    // Ocultar el botón de iniciar sesión
                     document.getElementById('loginButton').style.display = 'none';
     
-                    // Mostrar mensaje de bienvenida con SweetAlert
                     Swal.fire({
                         title: `¡Hola, ${user.displayName}!`,
                         text: "Tu progreso se guardará automáticamente.",

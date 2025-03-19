@@ -6,6 +6,12 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 let baseRadius ;
 
+let waveRadius = 0; // Radio de las ondas
+let waveSegments = 50; // Número de segmentos para las ondas
+let waveExpanding = true; // Si las ondas están expandiéndose
+let waveAnimationStarted = false; // Si la animación ya comenzó
+let lastWaveScore = null;
+
 function adjustCanvasSize() {
     if (window.innerHeight > window.innerWidth) {
         canvas.width = window.innerWidth * 0.7;
@@ -94,12 +100,62 @@ function getRandomColor() {
     return colors[Math.floor(Math.random() * colors.length)];
 }
 
+
+function drawSoundWaves() {
+    if (!waveAnimationStarted) {
+        waveRadius = 0;
+        waveExpanding = true;
+        waveAnimationStarted = true;
+    }
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)"; // Color azul claro para simular ondas de sonido
+    ctx.lineWidth = 2;
+
+    // Dibujar las ondas como líneas alrededor del borde
+    for (let i = 0; i < waveSegments; i++) {
+        let angle = (i / waveSegments) * Math.PI * 2;
+        let startX = (canvas.width / 2) + (waveRadius * Math.cos(angle));
+        let startY = (canvas.height / 2) + (waveRadius * Math.sin(angle));
+        
+        let endX = (canvas.width / 2) + ((waveRadius + 10) * Math.cos(angle));
+        let endY = (canvas.height / 2) + ((waveRadius + 10) * Math.sin(angle));
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+    }
+
+    // Expansión de las ondas
+    if (waveExpanding) {
+        waveRadius += 5;
+        if (waveRadius >= Math.max(canvas.width, canvas.height) / 2) {
+            waveExpanding = false; // Detener expansión al alcanzar el radio máximo
+        }
+    } else {
+        waveRadius -= 5; // Reducir el tamaño de la onda
+        if (waveRadius <= 0) {
+            waveAnimationStarted = false; // Resetear la animación de ondas
+        }
+    }
+}
+
+
+function checkForWaves() {
+    
+    if ((score >= 1500 && score <= 1600 )|| (score >= 7500 && score <= 7600 ) || (score >= 10000 && score <= 10100 )|| (score >= 15000 && score <= 15100 )) {
+        drawSoundWaves();  
+    }
+}
+
+
+
 // Verifica si un círculo se solapa con otros
 function isOverlapping(x, y, radius) {
     for (let circle of circles) {
         let distancia = Math.sqrt((x - circle.x) ** 2 + (y - circle.y) ** 2);
         if (distancia < radius * 2) {
-            return true; // Está demasiado cerca de otro círculo
+            return true;
         }
     }
     return false;
@@ -114,21 +170,30 @@ function addCircle() {
     const maxYPosition = canvas.height - baseRadius * 2;
 
     do {
-       
+        // Generar nuevas posiciones para los círculos
         x = Math.random() * (canvas.width - baseRadius * 2) + baseRadius;
         y = Math.random() * (maxYPosition - minYPosition) + minYPosition;
-   
+
+        // Asegurarse de que el círculo no esté en una posición fuera del rango permitido
         if (y < 200) {
             y = 200; 
         }
-        attempts++;
-    } while (isOverlapping(x, y, 80) && attempts < 20); // Evitar solapamientos
 
-    color = getRandomColor();
-    let circle = new Circle(x, y, 80, color);
-    circles.push(circle);
-    sequence.push(color);
+        attempts++;
+
+        // Verifica si el círculo solapa con otros
+    } while (isOverlapping(x, y, baseRadius) && attempts < 20); 
+
+    if (attempts < 20) {  
+        color = getRandomColor();
+        let circle = new Circle(x, y, baseRadius, color);
+        circles.push(circle);
+        sequence.push(color);
+    } else {
+        console.log("No se pudo generar un círculo sin solapamientos tras 20 intentos.");
+    }
 }
+
 
 function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -146,6 +211,7 @@ function updateGame() {
 
     circles.forEach(circle => circle.update());
     drawGame();
+    checkForWaves(); 
 
     if (gameActive && !gameOver) {
         requestAnimationFrame(updateGame);
@@ -165,8 +231,16 @@ canvas.addEventListener("click", function (event) {
     circles.forEach((circle, index) => {
         const distancia = Math.sqrt((clickX - circle.x) ** 2 + (clickY - circle.y) ** 2);
         if (distancia < circle.radius) {
+            const timeTaken = Date.now() - circle.timeCreated; 
             if (circle.color === sequence[currentCircleIndex]) {
-                score++;
+                let points = 0;
+                
+                if (timeTaken < 500) {  // Si hizo clic en menos de 500ms
+                    points = 100;
+                } else {
+                    points = 50;  // Si hizo clic después, sumar 50 puntos
+                }
+                score += points;
                 currentCircleIndex++;
                 circles.splice(index, 1);
                 clickedCorrectly = true;
@@ -205,6 +279,7 @@ function adjustGameSpeed() {
     } else if (currentTime < (2 * songDuration) / 3) {
         if (currentStage !== "Segunda Etapa") { 
             currentStage = "Segunda Etapa";
+            drawSoundWaves();
             colorStat = getRandomColor();
             discoState.textContent = currentStage;
             disco.style.borderColor = colorStat;
@@ -215,6 +290,7 @@ function adjustGameSpeed() {
         if (currentStage !== "Etapa Final") { 
             currentStage = "Etapa Final";
             colorStat = getRandomColor(); 
+            drawSoundWaves();
             discoState.textContent = currentStage;
             disco.style.borderColor = colorStat;
             discoState.style.color = colorStat;
@@ -268,6 +344,7 @@ function endGame() {
         showCancelButton: true,
         confirmButtonText: "Reiniciar",
         cancelButtonText: "Continuar",
+        allowOutsideClick: false,
     }).then((result) => {
         if (result.isConfirmed) {
             
@@ -328,6 +405,7 @@ Swal.fire({
     title: "¡Pulse para empezar !",
     text: "Haz clic en los círculos al ritmo de la música para ganar puntos.",
     confirmButtonText: "Jugar",
+    allowOutsideClick: false,
 }).then(() => {
     startGame();
 });
