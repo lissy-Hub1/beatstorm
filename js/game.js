@@ -10,8 +10,11 @@ let waveRadius = 0; // Radio de las ondas
 let waveSegments = 50; // Número de segmentos para las ondas
 let waveExpanding = true; // Si las ondas están expandiéndose
 let waveAnimationStarted = false; // Si la animación ya comenzó
-let lastWaveScore = null;
 
+/**
+ * Ajusta el tamaño del lienzo (canvas) en función de las dimensiones de la ventana.
+ * Cambia el tamaño de los círculos según el tamaño del lienzo.
+ */
 function adjustCanvasSize() {
     if (window.innerHeight > window.innerWidth) {
         canvas.width = window.innerWidth * 0.7;
@@ -25,48 +28,53 @@ function adjustCanvasSize() {
 }
 
 adjustCanvasSize();
-
+// Inicialización de las variables de juego
 let circles = [];
 let score = 0;
 let gameActive = false;
 let gameOver = false;
-let circleSpawnInterval = 600;
-let currentCircleIndex = 0;
-let sequence = [];
+let circleSpawnInterval = 600;  // Intervalo de tiempo entre la aparición de círculos
+let currentCircleIndex = 0;  // Índice del círculo actual en la secuencia
+let sequence = [];  // Secuencia de colores para la secuencia de círculos
 let intervalID = null;
-let timeLimit = 3000;
+let timeLimit = 3000;  // Tiempo límite para que un círculo desaparezca
 
+// Reproducción del audio seleccionado
 const audio = new Audio();
 const selectedSong = localStorage.getItem("selectedSong");
 
+// Si se ha seleccionado una canción, se establece su ruta para cargarla
 if (selectedSong) {
     audio.src = `../media/audio/${selectedSong}`; 
 } else {
     console.error("No se seleccionó ninguna canción.");
 } 
 
-let songDuration = 0;
+let songDuration = 0;  // Duración de la canción
 
+// Sonido que se reproduce cuando el jugador hace clic en un círculo correctamente
 const hitSound = new Audio("../media/audio/tap.mp3"); 
 
+// Obtener la duración de la canción cuando se carga completamente
 audio.addEventListener("loadedmetadata", () => {
     songDuration = audio.duration * 1000; 
 });
 
 
-
+// Clase que representa un círculo en el juego
 class Circle {
     constructor(x, y, radius, color) {
         this.x = x;
         this.y = y;
-        this.originalRadius = baseRadius;
-        this.radius = baseRadius;
-        this.color = color;
-        this.timeCreated = Date.now();
-        this.timeToDisappear = Date.now() + timeLimit;
-        this.isDisappearing = false;
+        this.originalRadius = baseRadius;  // Radio original del círculo
+        this.radius = baseRadius;  // Radio actual del círculo
+        this.color = color;  // Color del círculo
+        this.timeCreated = Date.now();  // Tiempo en que se creó el círculo
+        this.timeToDisappear = Date.now() + timeLimit;  // Tiempo para que el círculo desaparezca
+        this.isDisappearing = false;  // Si el círculo está desapareciendo
     }
 
+    // Función para actualizar el estado del círculo
     update() {
         let now = Date.now();
         let timeRemaining = this.timeToDisappear - now;
@@ -81,12 +89,14 @@ class Circle {
     draw() {
         ctx.lineWidth = 3;
 
+        // Dibujar el borde exterior del círculo
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius+5 , 0, Math.PI * 2);
         ctx.strokeStyle = this.color;
         ctx.stroke();
         ctx.closePath();
 
+        // Dibujar el círculo interior
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
         ctx.strokeStyle  = this.color;
@@ -95,12 +105,13 @@ class Circle {
     }
 }
 
+// Función para obtener un color aleatorio
 function getRandomColor() {
     const colors = ["#ff69b4", "#00bfff", "#ffff00"];
     return colors[Math.floor(Math.random() * colors.length)];
 }
 
-
+// Función para dibujar las ondas de sonido alrededor del lienzo
 function drawSoundWaves() {
     if (!waveAnimationStarted) {
         waveRadius = 0;
@@ -140,7 +151,7 @@ function drawSoundWaves() {
     }
 }
 
-
+// Verifica si las ondas deben ser mostradas en función del puntaje
 function checkForWaves() {
     
     if ((score >= 1500 && score <= 1600 )|| (score >= 7500 && score <= 7600 ) || (score >= 10000 && score <= 10100 )|| (score >= 15000 && score <= 15100 )) {
@@ -161,6 +172,7 @@ function isOverlapping(x, y, radius) {
     return false;
 }
 
+// Función para agregar un nuevo círculo al juego
 function addCircle() {
     if (circles.length >= 6 || gameOver) return;
 
@@ -263,47 +275,58 @@ let currentStage = ""; // Variable para rastrear la etapa actual
 let colorStat = "";
 
 function adjustGameSpeed() {
-    let currentTime = audio.currentTime * 1000; 
-    let discoState = document.getElementById("discoState");
-    let disco = document.getElementById("disco");
+    let currentTime = audio.currentTime * 1000; // Obtener el tiempo actual de la canción en milisegundos
+    let discoState = document.getElementById("discoState"); // Elemento HTML que muestra el estado del disco
+    let disco = document.getElementById("disco"); // Elemento HTML que representa el disco
 
+    // Si el tiempo actual está en la primera etapa de la canción
     if (currentTime < songDuration / 3) {
+        // Cambiar a la etapa inicial si no es la etapa actual
         if (currentStage !== "Etapa Inicial") {
-            currentStage = "Etapa Inicial";
-            colorStat = "#d69bfe"; 
-            discoState.textContent = currentStage;
-            disco.style.borderColor = colorStat;
-            discoState.style.color = colorStat;
+            currentStage = "Etapa Inicial"; // Establecer la etapa actual
+            colorStat = "#d69bfe"; // Color específico para la etapa inicial
+            discoState.textContent = currentStage; // Actualizar el texto del estado
+            disco.style.borderColor = colorStat; // Cambiar el color del borde del disco
+            discoState.style.color = colorStat; // Cambiar el color del texto
         }
-        circleSpawnInterval = 600;
-    } else if (currentTime < (2 * songDuration) / 3) {
-        if (currentStage !== "Segunda Etapa") { 
-            currentStage = "Segunda Etapa";
-            drawSoundWaves();
-            colorStat = getRandomColor();
-            discoState.textContent = currentStage;
-            disco.style.borderColor = colorStat;
-            discoState.style.color = colorStat;
+        circleSpawnInterval = 600; // Establecer intervalo de aparición de círculos para la etapa inicial
+    } 
+    // Si el tiempo actual está en la segunda etapa de la canción
+    else if (currentTime < (2 * songDuration) / 3) {
+        // Cambiar a la segunda etapa si no es la etapa actual
+        if (currentStage !== "Segunda Etapa") {
+            currentStage = "Segunda Etapa"; // Establecer la etapa actual
+            drawSoundWaves(); // Dibujar ondas de sonido para la segunda etapa
+            colorStat = getRandomColor(); // Obtener un color aleatorio para la etapa
+            discoState.textContent = currentStage; // Actualizar el texto del estado
+            disco.style.borderColor = colorStat; // Cambiar el color del borde del disco
+            discoState.style.color = colorStat; // Cambiar el color del texto
         }
-        circleSpawnInterval = 500;
-    } else {
-        if (currentStage !== "Etapa Final") { 
-            currentStage = "Etapa Final";
-            colorStat = getRandomColor(); 
-            drawSoundWaves();
-            discoState.textContent = currentStage;
-            disco.style.borderColor = colorStat;
-            discoState.style.color = colorStat;
+        circleSpawnInterval = 500; // Establecer intervalo de aparición de círculos para la segunda etapa
+    } 
+    // Si el tiempo actual está en la tercera etapa de la canción
+    else {
+        // Cambiar a la etapa final si no es la etapa actual
+        if (currentStage !== "Etapa Final") {
+            currentStage = "Etapa Final"; // Establecer la etapa actual
+            colorStat = getRandomColor(); // Obtener un color aleatorio para la etapa final
+            drawSoundWaves(); // Dibujar ondas de sonido para la etapa final
+            discoState.textContent = currentStage; // Actualizar el texto del estado
+            disco.style.borderColor = colorStat; // Cambiar el color del borde del disco
+            discoState.style.color = colorStat; // Cambiar el color del texto
         }
-        circleSpawnInterval = 400;
+        circleSpawnInterval = 400; // Establecer intervalo de aparición de círculos para la etapa final
     }
 
+    // Detener cualquier intervalo existente antes de establecer uno nuevo
     clearInterval(intervalID);
+
+    // Crear un nuevo intervalo que aparece círculos según el intervalo de la etapa actual
     intervalID = setInterval(() => {
         if (gameActive && !gameOver) {
-            addCircle();
+            addCircle(); // Llamar a la función para agregar un círculo al juego
         }
-    }, circleSpawnInterval);
+    }, circleSpawnInterval); // Intervalo de aparición de círculos determinado por la etapa
 }
 
 function startGame() {
