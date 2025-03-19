@@ -19,11 +19,11 @@ function adjustCanvasSize() {
     if (window.innerHeight > window.innerWidth) {
         canvas.width = window.innerWidth * 0.7;
         canvas.height = window.innerHeight * 0.7;
-        baseRadius = Math.min(canvas.width, canvas.height) * 0.15;
+        baseRadius = Math.min(canvas.width, canvas.height) * 0.18;
     } else {
         canvas.width = window.innerWidth * 0.7;
         canvas.height = window.innerHeight * 0.8;
-        baseRadius = Math.min(canvas.width, canvas.height) * 0.095;
+        baseRadius = Math.min(canvas.width, canvas.height) * 0.11;
     }
 }
 
@@ -61,20 +61,22 @@ audio.addEventListener("loadedmetadata", () => {
 });
 
 
+const circleImage = new Image();
+circleImage.src = "https://cdn-icons-png.flaticon.com/512/17290/17290802.png"; 
+
 // Clase que representa un círculo en el juego
 class Circle {
     constructor(x, y, radius, color) {
         this.x = x;
         this.y = y;
-        this.originalRadius = baseRadius;  // Radio original del círculo
-        this.radius = baseRadius;  // Radio actual del círculo
-        this.color = color;  // Color del círculo
-        this.timeCreated = Date.now();  // Tiempo en que se creó el círculo
-        this.timeToDisappear = Date.now() + timeLimit;  // Tiempo para que el círculo desaparezca
-        this.isDisappearing = false;  // Si el círculo está desapareciendo
+        this.originalRadius = baseRadius;
+        this.radius = baseRadius;
+        this.color = color;
+        this.timeCreated = Date.now();
+        this.timeToDisappear = Date.now() + timeLimit;
+        this.isDisappearing = false;
     }
 
-    // Función para actualizar el estado del círculo
     update() {
         let now = Date.now();
         let timeRemaining = this.timeToDisappear - now;
@@ -87,21 +89,19 @@ class Circle {
     }
 
     draw() {
-        ctx.lineWidth = 3;
-
-        // Dibujar el borde exterior del círculo
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius+5 , 0, Math.PI * 2);
-        ctx.strokeStyle = this.color;
-        ctx.stroke();
-        ctx.closePath();
-
-        // Dibujar el círculo interior
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.strokeStyle  = this.color;
-        ctx.stroke();
-        ctx.closePath();
+        if (circleImage.complete) { 
+            ctx.globalAlpha = this.opacity;
+            ctx.shadowColor = this.color ;
+            ctx.shadowBlur = 20;
+            ctx.drawImage(circleImage, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
+        } else {
+            circleImage.onload = () => {
+                ctx.globalAlpha = this.opacity;
+                ctx.shadowColor = this.color ;
+                ctx.shadowBlur = 20;
+                ctx.drawImage(circleImage, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
+            };
+        }
     }
 }
 
@@ -421,8 +421,6 @@ async function saveScoreToFirestore(score) {
         console.error("Error al guardar el puntaje en Firestore:", e);
     }
 }
-
-
 
 Swal.fire({
     title: "¡Pulse para empezar !",
